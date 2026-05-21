@@ -1,5 +1,25 @@
 import type { NextConfig } from "next";
 import type { RemotePattern } from "next/dist/shared/lib/image-config";
+import { loadEnvConfig } from "@next/env";
+
+loadEnvConfig(process.cwd());
+
+function getApiOriginForRewrites(): string {
+  const raw =
+    process.env.NEXT_PUBLIC_API_BASE_URL?.trim() ||
+    "http://localhost:5000/api";
+  try {
+    const normalized = raw.startsWith("http")
+      ? raw
+      : `http://localhost:5000${raw.startsWith("/") ? raw : `/${raw}`}`;
+    const withApi = /\/api$/i.test(normalized)
+      ? normalized
+      : `${normalized.replace(/\/$/, "")}/api`;
+    return new URL(withApi).origin;
+  } catch {
+    return "http://localhost:5000";
+  }
+}
 
 function buildImageRemotePatterns(): RemotePattern[] {
   const patterns: RemotePattern[] = [
@@ -15,10 +35,7 @@ function buildImageRemotePatterns(): RemotePattern[] {
     const protocol = u.protocol.replace(":", "") as "http" | "https";
     const hostPattern = { protocol, hostname: u.hostname, ...(u.port ? { port: u.port } : {}) };
 
-    patterns.push(
-      { ...hostPattern, pathname: "/api/uploads/**" },
-      { ...hostPattern, pathname: "/uploads/**" },
-    );
+    patterns.push({ ...hostPattern, pathname: "/**" });
   } catch {
     /* ignore invalid env */
   }
@@ -32,14 +49,15 @@ const nextConfig: NextConfig = {
     remotePatterns: buildImageRemotePatterns(),
   },
   async rewrites() {
+    const apiOrigin = getApiOriginForRewrites();
     return [
       {
-        source: '/api/:path*',
-        destination: 'http://localhost:5000/api/:path*',
+        source: "/api/:path*",
+        destination: `${apiOrigin}/api/:path*`,
       },
       {
-        source: '/uploads/:path*',
-        destination: 'http://localhost:5000/api/uploads/:path*',
+        source: "/uploads/:path*",
+        destination: `${apiOrigin}/api/uploads/:path*`,
       },
     ];
   },

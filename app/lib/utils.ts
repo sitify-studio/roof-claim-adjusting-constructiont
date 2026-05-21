@@ -34,6 +34,11 @@ function extractUploadsFilename(input: string): string | null {
   return m?.[1] ?? null
 }
 
+/** Same-origin path proxied to the API via next.config rewrites (works with next/image). */
+function uploadsPublicPath(filename: string): string {
+  return `/api/uploads/${filename.replace(/^\//, '')}`
+}
+
 /**
  * Resolves image URLs for Media Library images via the public route /api/uploads/*.
  * - Same-origin absolute URLs under /uploads/ are rewritten to /api/uploads/
@@ -69,7 +74,7 @@ export function getImageSrc(path: string | undefined | null | any): string {
       const isBackendUpload =
         u.pathname.startsWith('/uploads/') || u.pathname.startsWith('/api/uploads/')
       if (u.origin === apiOrigin && filename && isBackendUpload) {
-        return `${resolvedApiBase}/uploads/${filename}`
+        return uploadsPublicPath(filename)
       }
     } catch {
       /* ignore */
@@ -85,7 +90,7 @@ export function getImageSrc(path: string | undefined | null | any): string {
 
   const filenameFromPath = extractUploadsFilename(pathStr)
   if (filenameFromPath) {
-    return `${resolvedApiBase}/uploads/${filenameFromPath}`
+    return uploadsPublicPath(filenameFromPath)
   }
 
   let cleanPath = pathStr.replace(/^\//, '')
@@ -96,5 +101,5 @@ export function getImageSrc(path: string | undefined | null | any): string {
     cleanPath = cleanPath.slice('api/uploads/'.length)
   }
 
-  return `${resolvedApiBase}/uploads/${cleanPath}`
+  return uploadsPublicPath(cleanPath)
 }
