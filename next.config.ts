@@ -1,8 +1,5 @@
 import type { NextConfig } from "next";
 import type { RemotePattern } from "next/dist/shared/lib/image-config";
-import { loadEnvConfig } from "@next/env";
-
-loadEnvConfig(process.cwd());
 
 function getApiOriginForRewrites(): string {
   const raw =
